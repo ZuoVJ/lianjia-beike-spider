@@ -5,6 +5,8 @@
 # 爬取二手房数据的爬虫派生类
 
 import re
+
+import pandas as pd
 import threadpool
 from bs4 import BeautifulSoup
 from lib.item.ershou import *
@@ -29,19 +31,26 @@ class ErShouSpider(BaseSpider):
         """
         district_name = area_dict.get(area_name, "")
         csv_file = self.today_path + "/{0}_{1}.csv".format(district_name, area_name)
-        with open(csv_file, "w") as f:
-            # 开始获得需要的板块数据
-            ershous = self.get_area_ershou_info(city_name, area_name)
-            # 锁定，多线程读写
-            if self.mutex.acquire(1):
-                self.total_num += len(ershous)
-                # 释放
-                self.mutex.release()
-            if fmt == "csv":
-                for ershou in ershous:
-                    # print(date_string + "," + xiaoqu.text())
-                    f.write(self.date_string + "," + ershou.text() + "\n")
-        print("Finish crawl area: " + area_name + ", save data to : " + csv_file)
+        # with open(csv_file, "w") as f:
+        #     # 开始获得需要的板块数据
+        #     ershous = self.get_area_ershou_info(city_name, area_name)
+        #     # 锁定，多线程读写
+        #     if self.mutex.acquire(1):
+        #         self.total_num += len(ershous)
+        #         # 释放
+        #         self.mutex.release()
+        #     if fmt == "csv":
+        #         # df = pd.DataFrame(ershous)
+        #         # df.to_csv()
+        #         for ershou in ershous:
+        #             # print(date_string + "," + xiaoqu.text())
+        #             f.write(self.date_string + "," + ershou.text() + "\n")
+        # print("Finish crawl area: " + area_name + ", save data to : " + csv_file)
+
+        # 直接返回数据
+        ershous = self.get_area_ershou_info(city_name, area_name)
+        return ershous
+
 
     @staticmethod
     def get_area_ershou_info(city_name, area_name):
@@ -91,6 +100,7 @@ class ErShouSpider(BaseSpider):
                 price = house_elem.find('div', class_="totalPrice")
                 name = house_elem.find('div', class_='title')
                 desc = house_elem.find('div', class_="houseInfo")
+                desc = house_elem.find('div', class_="houseInfo")
                 pic = house_elem.find('a', class_="img").find('img', class_="lj-lazy")
 
                 # 继续清理数据
@@ -129,20 +139,29 @@ class ErShouSpider(BaseSpider):
                 area_dict[area] = district
         print("Area:", areas)
         print("District and areas:", area_dict)
-
+        areas = areas[0: 1]  # For debugging
+        for area in areas:
+            ershous = self.get_area_ershou_info(city,area)
+        df = pd.DataFrame(ershous)
+        print(df.head())
+        df.to_csv('data/check.csv')
         # 准备线程池用到的参数
-        nones = [None for i in range(len(areas))]
-        city_list = [city for i in range(len(areas))]
-        args = zip(zip(city_list, areas), nones)
-        # areas = areas[0: 1]   # For debugging
-
+        # nones = [None for i in range(len(areas))]
+        # city_list = [city for i in range(len(areas))]
+        # args = zip(zip(city_list, areas), nones)
+        #
+        # # 单线程执行
+        # for arg in args:
+        #     print(arg)
+            # self.collect_area_ershou_data(arg)
         # 针对每个板块写一个文件,启动一个线程来操作
-        pool_size = thread_pool_size
-        pool = threadpool.ThreadPool(pool_size)
-        my_requests = threadpool.makeRequests(self.collect_area_ershou_data, args)
-        [pool.putRequest(req) for req in my_requests]
-        pool.wait()
-        pool.dismissWorkers(pool_size, do_join=True)  # 完成后退出
+        # pool_size = thread_pool_size
+        # pool = threadpool.ThreadPool(pool_size)
+        #
+        # my_requests = threadpool.makeRequests(self.collect_area_ershou_data, args)
+        # [pool.putRequest(req) for req in my_requests]
+        # pool.wait()
+        # pool.dismissWorkers(pool_size, do_join=True)  # 完成后退出
 
         # 计时结束，统计结果
         t2 = time.time()

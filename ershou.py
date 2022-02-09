@@ -7,6 +7,6 @@
 from lib.spider.ershou_spider import *
 
 if __name__ == "__main__":
-    spider = ErShouSpider(SPIDER_NAME)
+    spider = ErShouSpcider(SPIDER_NAME)
     spider.start()
 

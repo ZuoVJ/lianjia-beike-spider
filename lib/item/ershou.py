@@ -21,3 +21,6 @@ class ErShou(object):
                 self.price + "," + \
                 self.desc + "," + \
                 self.pic
+
+if __name__ == "__main":
+    pass
